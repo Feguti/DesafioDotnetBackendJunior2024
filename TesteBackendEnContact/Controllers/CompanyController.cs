@@ -1,8 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Controllers.Models;
+using TesteBackendEnContact.Core.Domain.ContactBook;
+using TesteBackendEnContact.Core.Domain.ContactBook.Company;
+using TesteBackendEnContact.Core.Domain.ContactBook.Contact;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 using TesteBackendEnContact.Repository.Interface;
 
@@ -24,6 +28,21 @@ namespace TesteBackendEnContact.Controllers
         {
             return Ok(await companyRepository.SaveAsync(company.ToCompany()));
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchByName([FromQuery] string companyName, [FromServices] ICompanyRepository companyRepository)
+        {
+            try
+            {
+                var companies = await companyRepository.SearchByNameAsync(companyName);
+                return Ok(companies);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao buscar empresas: {ex.Message}");
+            }
+        }
+
 
         [HttpDelete]
         public async Task Delete(int id, [FromServices] ICompanyRepository companyRepository)

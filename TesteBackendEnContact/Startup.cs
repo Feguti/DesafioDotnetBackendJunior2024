@@ -1,12 +1,14 @@
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
 using System;
+using System.Data;
 using TesteBackendEnContact.Database;
 using TesteBackendEnContact.Repository;
 using TesteBackendEnContact.Repository.Interface;
@@ -38,9 +40,21 @@ namespace TesteBackendEnContact
                         .ScanIn(typeof(Startup).Assembly).For.Migrations())
                     .AddLogging(lb => lb.AddFluentMigratorConsole());
 
-            services.AddSingleton(new DatabaseConfig { ConnectionString = Configuration.GetConnectionString("DefaultConnection") });
+            //services.AddSingleton(new DatabaseConfig { ConnectionString = Configuration.GetConnectionString("DefaultConnection") });
+
+
             services.AddScoped<IContactBookRepository, ContactBookRepository>();
             services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<IContactRepository, ContactRepository>();
+
+            services.AddSingleton<DatabaseConfig>(); // Registrando a classe de configuração do banco de dados
+
+            // Configurando o SQLite
+            services.AddSingleton<IDbConnection>(new SqliteConnection(Configuration.GetConnectionString("DefaultConnection")));
+
+            // Registrando o repositório
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

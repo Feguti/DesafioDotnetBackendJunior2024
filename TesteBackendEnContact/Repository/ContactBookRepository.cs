@@ -2,7 +2,9 @@
 using Dapper.Contrib.Extensions;
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Core.Domain.ContactBook;
 using TesteBackendEnContact.Core.Interface.ContactBook;
@@ -13,20 +15,19 @@ namespace TesteBackendEnContact.Repository
 {
     public class ContactBookRepository : IContactBookRepository
     {
-        private readonly DatabaseConfig databaseConfig;
+        private readonly IDbConnection _connection;  //Agora não é mais necessário abrir uma conexão dentro de cada operação
 
-        public ContactBookRepository(DatabaseConfig databaseConfig)
+        public ContactBookRepository(IDbConnection connection)
         {
-            this.databaseConfig = databaseConfig;
+            _connection = connection;
         }
 
 
         public async Task<IContactBook> SaveAsync(IContactBook contactBook)
         {
-            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
             var dao = new ContactBookDao(contactBook);
 
-            dao.Id = await connection.InsertAsync(dao);
+            dao.Id = await _connection.InsertAsync(dao);
 
             return dao.Export();
         }
@@ -34,23 +35,20 @@ namespace TesteBackendEnContact.Repository
 
         public async Task DeleteAsync(int id)
         {
-            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            // TODO - DONE
 
-            // TODO
-            var sql = "";
+            var sql = new StringBuilder();
+            sql.AppendLine("DELETE FROM ContactBook WHERE Id = @id;");
+            sql.AppendLine("UPDATE Company SET ContactBookId = null WHERE ContactBookId = @id;");
 
-            await connection.ExecuteAsync(sql);
+            await _connection.ExecuteAsync(sql.ToString(), new { id });
         }
-
-
 
 
         public async Task<IEnumerable<IContactBook>> GetAllAsync()
         {
-            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
-
             var query = "SELECT * FROM ContactBook";
-            var result = await connection.QueryAsync<ContactBookDao>(query);
+            var result = await _connection.QueryAsync<ContactBookDao>(query);
 
             var returnList = new List<IContactBook>();
 
@@ -62,6 +60,7 @@ namespace TesteBackendEnContact.Repository
 
             return returnList.ToList();
         }
+
         public async Task<IContactBook> GetAsync(int id)
         {
             var list = await GetAllAsync();
@@ -84,7 +83,7 @@ namespace TesteBackendEnContact.Repository
         public ContactBookDao(IContactBook contactBook)
         {
             Id = contactBook.Id;
-            Name = Name;
+            Name = contactBook.Name; //Erro de digitação corrigido
         }
 
         public IContactBook Export() => new ContactBook(Id, Name);
